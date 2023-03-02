@@ -33,6 +33,7 @@
 */
 
 void DestroyWindowAndRenderer(SDL_Window* window, SDL_Renderer* renderer, const char* message);
+void displayMenu(int state, SDL_Window* window, SDL_Renderer* renderer);
 void displayGrid(int grid[GRID_SIZE][GRID_SIZE], int loose, SDL_Window* window, SDL_Renderer* renderer);
 int setBomb(int grid[GRID_SIZE][GRID_SIZE], int startPosX, int startPosY);
 int bombArround(int grid[GRID_SIZE][GRID_SIZE], int posX, int posY);
@@ -59,19 +60,97 @@ int main(void)
         ExitWithError("Initialisation SDL echouee");
     }
 
-    if (window = SDL_CreateWindowAndRenderer((GRID_SIZE) * 50 + (SIDE_PADDING) * 2, (GRID_SIZE) * 50, SDL_WINDOW_ALWAYS_ON_TOP, &window, &renderer) != 0)
+    if (window = SDL_CreateWindowAndRenderer(800, 600, SDL_WINDOW_ALWAYS_ON_TOP, &window, &renderer) != 0)
     {
         ExitWithError("Creation fenetre et rendu echoues");
     }
+
+    SDL_bool program_launched = SDL_TRUE;
+
+
+    //------------------------------------------//
+    // 
+    //------------------------------------------// Menu
+
+    displayMenu(0, window, renderer);
+
+    while (program_launched)
+    {
+        SDL_Event event;
+
+        while (SDL_PollEvent(&event))
+        {
+            switch (event.type)
+            {
+            case SDL_MOUSEBUTTONDOWN:
+                if (event.button.button == SDL_BUTTON_LEFT)
+                {
+                    tryPlayerPos[0] = event.button.x;
+                    tryPlayerPos[1] = event.button.y;
+                    if ((tryPlayerPos[0] >= 315 && tryPlayerPos[0] < 485) && (tryPlayerPos[1] >= 350 && tryPlayerPos[1] < 447))
+                    {
+                        displayMenu(1, window, renderer);
+                        SDL_Delay(300);
+                        program_launched = SDL_FALSE;
+                    }
+                }
+                break;
+
+            case SDL_QUIT:
+                program_launched = SDL_FALSE;
+                DestroyWindowAndRenderer(&window, &renderer, "None");
+                return 0;
+
+            default:
+                break;
+            }
+        }
+    }
+
+    program_launched = SDL_TRUE;
+
+    displayMenu(2, window, renderer);
+
+    while (program_launched)
+    {
+        SDL_Event event;
+
+        while (SDL_PollEvent(&event))
+        {
+            switch (event.type)
+            {
+            case SDL_MOUSEBUTTONDOWN:
+                if (event.button.button == SDL_BUTTON_LEFT)
+                {
+                    tryPlayerPos[0] = event.button.x;
+                    tryPlayerPos[1] = event.button.y;
+                    if ((tryPlayerPos[0] >= 315 && tryPlayerPos[0] < 485) && (tryPlayerPos[1] >= 350 && tryPlayerPos[1] < 447))
+                    {
+                        displayMenu(1, window, renderer);
+                        SDL_Delay(300);
+                        program_launched = SDL_FALSE;
+                    }
+                }
+                break;
+
+            case SDL_QUIT:
+                program_launched = SDL_FALSE;
+                DestroyWindowAndRenderer(&window, &renderer, "None");
+                return 0;
+
+            default:
+                break;
+            }
+        }
+    }
+
+    program_launched = SDL_TRUE;
 
     //------------------------------------------//
     // 
     //------------------------------------------// Tour 1
 
     displayGrid(grid, 0, window, renderer);
-
-    SDL_bool program_launched = SDL_TRUE;
-
     while (program_launched)
     {
         SDL_Event event;
@@ -224,6 +303,76 @@ void ExitWithError(const char* message)
     SDL_Log("ERREUR : %s > %s\n", message, SDL_GetError());
     SDL_Quit();
     exit(EXIT_FAILURE);
+}
+
+void displayMenu(int state, SDL_Window* window, SDL_Renderer* renderer)
+{
+    SDL_Surface* imageCase = NULL;
+    SDL_Texture* texture = NULL;
+    SDL_Rect rectangleTest;
+
+    imageCase = NULL;
+    texture = NULL;
+
+    imageCase = SDL_LoadBMP("src/background.bmp");
+
+    if (imageCase == NULL)
+        DestroyWindowAndRenderer(&window, &renderer, "\"src/background.bmp\" n'a pas pu se charger");
+
+    texture = SDL_CreateTextureFromSurface(renderer, imageCase);
+    SDL_FreeSurface(imageCase);
+
+    if (texture == NULL)
+        DestroyWindowAndRenderer(&window, &renderer, "Impossible de creer \"texture\"");
+
+    if (SDL_QueryTexture(texture, NULL, NULL, &rectangleTest.w, &rectangleTest.h) != 0)
+        DestroyWindowAndRenderer(&window, &renderer, "Impossible d'acceder à \"texture\"");
+
+    rectangleTest.x = 0;
+    rectangleTest.y = 0;
+
+    if (SDL_RenderCopy(renderer, texture, NULL, &rectangleTest) != 0)
+        DestroyWindowAndRenderer(&window, &renderer, "Impossible d'afficher \"texture\"");
+
+
+    imageCase = NULL;
+    texture = NULL;
+    switch (state)
+    {
+    case 0:
+        imageCase = SDL_LoadBMP("src/button.bmp");
+        break;
+
+    case 1:
+        imageCase = SDL_LoadBMP("src/button2.bmp");
+        break;
+
+    default:
+        imageCase = SDL_LoadBMP("src/bomb.bmp");
+        break;
+    }
+
+    if (imageCase == NULL)
+        DestroyWindowAndRenderer(&window, &renderer, "\"src/button.bmp\" n'a pas pu se charger");
+
+    texture = SDL_CreateTextureFromSurface(renderer, imageCase);
+    SDL_FreeSurface(imageCase);
+
+    if (texture == NULL)
+        DestroyWindowAndRenderer(&window, &renderer, "Impossible de creer \"texture\"");
+
+    if (SDL_QueryTexture(texture, NULL, NULL, &rectangleTest.w, &rectangleTest.h) != 0)
+        DestroyWindowAndRenderer(&window, &renderer, "Impossible d'acceder à \"texture\"");
+
+    rectangleTest.x = 400 - rectangleTest.w / 2;
+    rectangleTest.y = 350;
+
+    if (SDL_RenderCopy(renderer, texture, NULL, &rectangleTest) != 0)
+        DestroyWindowAndRenderer(&window, &renderer, "Impossible d'afficher \"texture\"");
+
+    SDL_RenderPresent(renderer);
+    SDL_DestroyTexture(texture);
+
 }
 
 void displayGrid(int grid[GRID_SIZE][GRID_SIZE], int loose, SDL_Window* window, SDL_Renderer* renderer)
