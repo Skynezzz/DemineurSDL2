@@ -1,14 +1,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <windows.h>
 #include <SDL.h>
 #include "Array.h"
 
-#define GRID_SIZE 10
-#define BOMB_COUNT 17
+typedef struct stTexture
+{
+    SDL_Texture* texture;
+    SDL_Rect rectangle;
+} stTexture;
 
-#define SIDE_PADDING 400
+#define WINDOW_SIZE_X 1050
+#define WINDOW_SIZE_Y 700
+
+#define SIDE_PADDING 0
 
 #define GRID_HIDE_CASE 0
 #define GRID_SHOW_CASE 1
@@ -29,26 +34,33 @@
     1 : False / Err
     y:8 / x:10
     y:14 / x:18
-    y:20 / x:24
+    y:20 / x:24$
 */
 
-void DestroyWindowAndRenderer(SDL_Window* window, SDL_Renderer* renderer, const char* message);
-void displayMenu(int state, SDL_Window* window, SDL_Renderer* renderer);
-void displayGrid(int grid[GRID_SIZE][GRID_SIZE], int loose, SDL_Window* window, SDL_Renderer* renderer);
-int setBomb(int grid[GRID_SIZE][GRID_SIZE], int startPosX, int startPosY);
-int bombArround(int grid[GRID_SIZE][GRID_SIZE], int posX, int posY);
-int findSafeCase(int grid[GRID_SIZE][GRID_SIZE], int posX, int posY);
-int isVictory(int grid[GRID_SIZE][GRID_SIZE]);
-void ExitWithError(const char* message);
+int menu(SDL_Window* window, SDL_Renderer* renderer, stTexture* TAB_TEXTURE);
+void displayMenu(int state, SDL_Window* window, SDL_Renderer* renderer, stTexture* TAB_TEXTURE);
 
+void gameSetup(int** grid, int GRID_SIZE_Y, int GRID_SIZE_X, int BOMB_COUNT, SDL_Window* window, SDL_Renderer* renderer, stTexture* TAB_TEXTURE);
+void displayGrid(int** grid, int GRID_SIZE_Y, int GRID_SIZE_X, int loose, int frame, int state, SDL_Window* window, SDL_Renderer* renderer, stTexture* TAB_TEXTURE);
+int setBomb(int** grid, int GRID_SIZE_Y, int GRID_SIZE_X, int BOMB_COUNT, int startPosX, int startPosY);
+int game(int** grid, int GRID_SIZE_Y, int GRID_SIZE_X, int BOMB_COUNT, SDL_Window* window, SDL_Renderer* renderer, stTexture* TAB_TEXTURE);
+void displayFlagCount(int flagCount, int BOMB_COUNT, SDL_Window* window, SDL_Renderer* renderer, stTexture* TAB_TEXTURE);
+int findSafeCase(int** grid, int GRID_SIZE_Y, int GRID_SIZE_X, int posX, int posY);
+int bombArround(int** grid, int GRID_SIZE_Y, int GRID_SIZE_X, int posX, int posY);
+int isVictory(int** grid, int GRID_SIZE_Y, int GRID_SIZE_X);
+int replay(SDL_Window* window, SDL_Renderer* renderer, stTexture* TAB_TEXTURE, int loose);
+
+void timer(time, frameRate, step);
+void DestroyWindowAndRenderer(SDL_Window* window, SDL_Renderer* renderer, const char* message);
+void ExitWithError(const char* message);
 
 int main(void)
 {
-    int grid[GRID_SIZE][GRID_SIZE] = { GRID_HIDE_CASE };
-    int tryPlayerPos[2] = { 0 };
-    int choice = 0;
-    int i = 0;
-    int flagRemaining = BOMB_COUNT;
+    int i, j = 0;
+    int menuOutput, gameOutput = 0;
+    int GRID_SIZE_X = 0;
+    int GRID_SIZE_Y = 0;
+    int BOMB_COUNT = 0;
 
     //-----------------SDL_INIT-----------------//
 
@@ -60,97 +72,303 @@ int main(void)
         ExitWithError("Initialisation SDL echouee");
     }
 
-    if (window = SDL_CreateWindowAndRenderer(800, 600, SDL_WINDOW_ALWAYS_ON_TOP, &window, &renderer) != 0)
+    if (window = SDL_CreateWindowAndRenderer(WINDOW_SIZE_X, WINDOW_SIZE_Y, 0, &window, &renderer) != 0)
     {
         ExitWithError("Creation fenetre et rendu echoues");
     }
 
+    //------------------------------------------//
+    // 
+    //------------------------------------------// Image init
+
+    char* srcTab[44];
+    srcTab[0] = "src/background.bmp";
+    srcTab[1] = "src/bomb.bmp";
+    srcTab[2] = "src/bomb2.bmp";
+    srcTab[3] = "src/bomb3.bmp";
+    srcTab[4] = "src/bomb4.bmp";
+    srcTab[5] = "src/button.bmp";
+    srcTab[6] = "src/button2.bmp";
+    srcTab[7] = "src/eight.bmp";
+    srcTab[8] = "src/exit.bmp";
+    srcTab[9] = "src/five.bmp";
+    srcTab[10] = "src/flag.bmp";
+    srcTab[11] = "src/flag2.bmp";
+    srcTab[12] = "src/four.bmp";
+    srcTab[13] = "src/gameover.bmp";
+    srcTab[14] = "src/hide.bmp";
+    srcTab[15] = "src/hyperball1.bmp";
+    srcTab[16] = "src/hyperball2.bmp";
+    srcTab[17] = "src/masterball1.bmp";
+    srcTab[18] = "src/masterball2.bmp";
+    srcTab[19] = "src/one.bmp";
+    srcTab[20] = "src/pokeball.bmp";
+    srcTab[21] = "src/pokeball1.bmp";
+    srcTab[22] = "src/pokeball2.bmp";
+    srcTab[23] = "src/retry.bmp";
+    srcTab[24] = "src/seven.bmp";
+    srcTab[25] = "src/show.bmp";
+    srcTab[26] = "src/six.bmp";
+    srcTab[27] = "src/superball1.bmp";
+    srcTab[28] = "src/superball2.bmp";
+    srcTab[29] = "src/three.bmp";
+    srcTab[30] = "src/two.bmp";
+    srcTab[31] = "src/win.bmp";
+    srcTab[32] = "src/zincgrey.bmp";
+    srcTab[33] = "src/0.bmp";
+    srcTab[34] = "src/1.bmp";
+    srcTab[35] = "src/2.bmp";
+    srcTab[36] = "src/3.bmp";
+    srcTab[37] = "src/4.bmp";
+    srcTab[38] = "src/5.bmp";
+    srcTab[39] = "src/6.bmp";
+    srcTab[40] = "src/7.bmp";
+    srcTab[41] = "src/8.bmp";
+    srcTab[42] = "src/9.bmp";
+    srcTab[43] = "src/less.bmp";
+
+    stTexture TAB_TEXTURE[44];
+
+    SDL_Surface* imageCase = NULL;
+    SDL_Texture* texture = NULL;
+    SDL_Rect rectangle;
+
+    for (i = 0; i < 44; i++)
+    {
+        imageCase = SDL_LoadBMP(srcTab[i]);
+
+        if (imageCase == NULL)
+            return 1;
+
+        texture = SDL_CreateTextureFromSurface(renderer, imageCase);
+
+        if (SDL_QueryTexture(texture, NULL, NULL, &rectangle.w, &rectangle.h) != 0)
+            return 1;
+
+        TAB_TEXTURE[i].texture = texture;
+        TAB_TEXTURE[i].rectangle = rectangle;
+    }
+    SDL_FreeSurface(imageCase);
+
+    //------------------------------------------//
+    // 
+    //------------------------------------------// difficulty
+
+    while (gameOutput == 0)
+    {
+        menuOutput = menu(window, renderer, TAB_TEXTURE);
+
+        GRID_SIZE_Y = 8 + 3 * menuOutput;
+        int** grid = malloc(sizeof(int*) * (GRID_SIZE_Y));
+
+        if (menuOutput == 0)
+        {
+            BOMB_COUNT = 10;
+            GRID_SIZE_X = 10;
+        }
+        else if (menuOutput == 1)
+        {
+            BOMB_COUNT = 40;
+            GRID_SIZE_X = 14;
+        }
+        else if (menuOutput == 2)
+        {
+            BOMB_COUNT = 50;
+            GRID_SIZE_X = 18;
+        }
+        else if (menuOutput == 3)
+        {
+            BOMB_COUNT = 368;
+            GRID_SIZE_Y = 18;
+            GRID_SIZE_X = 21;
+        }
+        else
+        {
+            DestroyWindowAndRenderer(window, renderer, "Grille non initialisee");
+            break;
+        }
+
+        for (int i = 0; i < GRID_SIZE_Y; i++)
+        {
+            grid[i] = malloc(sizeof(int) * GRID_SIZE_X);
+        }
+        for (i = 0; i < GRID_SIZE_Y; i++)
+        {
+            for (j = 0; j < GRID_SIZE_X; j++)
+            {
+                grid[i][j] = 0;
+            }
+        }
+
+        //------------------------------------------//
+        // 
+        //------------------------------------------// Jeu
+
+        gameSetup(grid, GRID_SIZE_Y, GRID_SIZE_X, BOMB_COUNT, window, renderer, TAB_TEXTURE);
+        gameOutput = game(grid, GRID_SIZE_Y, GRID_SIZE_X, BOMB_COUNT, window, renderer, TAB_TEXTURE);
+
+
+        for (i = 0; i < GRID_SIZE_Y; i++)
+        {
+            free(grid[i]);
+        }
+        free(grid);
+    }
+
+    DestroyWindowAndRenderer(&window, &renderer, "None");
+    return 0;
+}
+
+int menu(SDL_Window* window, SDL_Renderer* renderer, stTexture* TAB_TEXTURE)
+{
+    SDL_bool program_launched = SDL_TRUE;
+    int tryPlayerPos[2] = { 0 };
+
+    // Step 1
+    displayMenu(5, window, renderer, TAB_TEXTURE);
+
+    while (program_launched)
+    {
+        SDL_Event event;
+        while (SDL_PollEvent(&event))
+        {
+            switch (event.type)
+            {
+            case SDL_MOUSEBUTTONDOWN:
+                if (event.button.button == SDL_BUTTON_LEFT)
+                {
+                    tryPlayerPos[0] = event.button.x;
+                    tryPlayerPos[1] = event.button.y;
+                    if ((tryPlayerPos[0] >= (WINDOW_SIZE_X) / 2 - 85 && tryPlayerPos[0] < (WINDOW_SIZE_X) / 2 + 85) && (tryPlayerPos[1] >= (WINDOW_SIZE_Y)-277 && tryPlayerPos[1] < (WINDOW_SIZE_Y)-180))
+                    {
+                        displayMenu(6, window, renderer, TAB_TEXTURE);
+                        SDL_Delay(300);
+                        program_launched = SDL_FALSE;
+                    }
+                }
+                break;
+
+            case SDL_QUIT:
+                program_launched = SDL_FALSE;
+                DestroyWindowAndRenderer(&window, &renderer, "None");
+                return 0;
+
+            default:
+                break;
+            }
+        }
+    }
+
+    program_launched = SDL_TRUE;
+
+    displayMenu(20, window, renderer, TAB_TEXTURE);
+
+    // Step 2 (difficulty)
+    while (program_launched)
+    {
+        SDL_Event event;
+
+        while (SDL_PollEvent(&event))
+        {
+            switch (event.type)
+            {
+            case SDL_MOUSEMOTION:
+                tryPlayerPos[0] = event.motion.x;
+                tryPlayerPos[1] = event.motion.y;
+                if (tryPlayerPos[1] >= (WINDOW_SIZE_Y)-320 && tryPlayerPos[1] < (WINDOW_SIZE_Y)-223)
+                {
+                    if (tryPlayerPos[0] >= 86 - 15 && tryPlayerPos[0] < 183 - 15)
+                        displayMenu(21, window, renderer, TAB_TEXTURE);
+                    else if (tryPlayerPos[0] >= 356 - 15 && tryPlayerPos[0] < 453 - 15)
+                        displayMenu(27, window, renderer, TAB_TEXTURE);
+                    else if (tryPlayerPos[0] >= 626 - 15 && tryPlayerPos[0] < 723 - 15)
+                        displayMenu(15, window, renderer, TAB_TEXTURE);
+                    else if (tryPlayerPos[0] >= 896 - 15 && tryPlayerPos[0] < 993 - 15)
+                        displayMenu(17, window, renderer, TAB_TEXTURE);
+                    else
+                        displayMenu(20, window, renderer, TAB_TEXTURE);
+                }
+                else
+                    displayMenu(20, window, renderer, TAB_TEXTURE);
+
+                break;
+            case SDL_MOUSEBUTTONDOWN:
+                if (event.button.button == SDL_BUTTON_LEFT)
+                {
+                    tryPlayerPos[0] = event.button.x;
+                    tryPlayerPos[1] = event.button.y;
+                    if (tryPlayerPos[1] >= (WINDOW_SIZE_Y)-320 && tryPlayerPos[1] < (WINDOW_SIZE_Y)-223)
+                    {
+                        if (tryPlayerPos[0] >= 86 - 15 && tryPlayerPos[0] < 183 - 15)
+                        {
+                            displayMenu(22, window, renderer, TAB_TEXTURE);
+                            SDL_Delay(300);
+                            return 0;
+                        }
+                        if (tryPlayerPos[0] >= 356 - 15 && tryPlayerPos[0] < 453 - 15)
+                        {
+                            displayMenu(28, window, renderer, TAB_TEXTURE);
+                            SDL_Delay(300);
+                            return 1;
+                        }
+                        if (tryPlayerPos[0] >= 626 - 15 && tryPlayerPos[0] < 723 - 15)
+                        {
+                            displayMenu(16, window, renderer, TAB_TEXTURE);
+                            SDL_Delay(300);
+                            return 2;
+                        }
+                        if (tryPlayerPos[0] >= 896 - 15 && tryPlayerPos[0] < 993 - 15)
+                        {
+                            displayMenu(18, window, renderer, TAB_TEXTURE);
+                            SDL_Delay(300);
+                            return 3;
+                        }
+                    }
+                }
+                break;
+
+            case SDL_QUIT:
+                program_launched = SDL_FALSE;
+                DestroyWindowAndRenderer(&window, &renderer, "None");
+                return 0;
+
+            default:
+                break;
+            }
+        }
+    }
+}
+
+void displayMenu(int state, SDL_Window* window, SDL_Renderer* renderer, stTexture* TAB_TEXTURE)
+{
+    TAB_TEXTURE[0].rectangle.x = 0;
+    TAB_TEXTURE[0].rectangle.y = 0;
+
+    if (SDL_RenderCopy(renderer, TAB_TEXTURE[0].texture, NULL, &TAB_TEXTURE[0].rectangle) != 0)
+        DestroyWindowAndRenderer(&window, &renderer, "Impossible d'afficher \"texture\"");
+
+
+    TAB_TEXTURE[state].rectangle.x = (WINDOW_SIZE_X) / 2 - TAB_TEXTURE[state].rectangle.w / 2;
+    TAB_TEXTURE[state].rectangle.y = (WINDOW_SIZE_Y)-180 - TAB_TEXTURE[state].rectangle.h;
+
+    if (SDL_RenderCopy(renderer, TAB_TEXTURE[state].texture, NULL, &TAB_TEXTURE[state].rectangle) != 0)
+        DestroyWindowAndRenderer(&window, &renderer, "Impossible d'afficher \"texture\"");
+
+    SDL_RenderPresent(renderer);
+}
+
+void gameSetup(int** grid, int GRID_SIZE_Y, int GRID_SIZE_X, int BOMB_COUNT, SDL_Window* window, SDL_Renderer* renderer, stTexture* TAB_TEXTURE)
+{
+    TAB_TEXTURE[32].rectangle.x = 0;
+    TAB_TEXTURE[32].rectangle.y = 0;
+
+    if (SDL_RenderCopy(renderer, TAB_TEXTURE[32].texture, NULL, &TAB_TEXTURE[32].rectangle) != 0)
+        DestroyWindowAndRenderer(&window, &renderer, "Impossible d'afficher \"texture\"");
+
+    int tryPlayerPos[2] = { 0 };
     SDL_bool program_launched = SDL_TRUE;
 
-
-    //------------------------------------------//
-    // 
-    //------------------------------------------// Menu
-
-    displayMenu(0, window, renderer);
-
-    while (program_launched)
-    {
-        SDL_Event event;
-
-        while (SDL_PollEvent(&event))
-        {
-            switch (event.type)
-            {
-            case SDL_MOUSEBUTTONDOWN:
-                if (event.button.button == SDL_BUTTON_LEFT)
-                {
-                    tryPlayerPos[0] = event.button.x;
-                    tryPlayerPos[1] = event.button.y;
-                    if ((tryPlayerPos[0] >= 315 && tryPlayerPos[0] < 485) && (tryPlayerPos[1] >= 350 && tryPlayerPos[1] < 447))
-                    {
-                        displayMenu(1, window, renderer);
-                        SDL_Delay(300);
-                        program_launched = SDL_FALSE;
-                    }
-                }
-                break;
-
-            case SDL_QUIT:
-                program_launched = SDL_FALSE;
-                DestroyWindowAndRenderer(&window, &renderer, "None");
-                return 0;
-
-            default:
-                break;
-            }
-        }
-    }
-
-    program_launched = SDL_TRUE;
-
-    displayMenu(2, window, renderer);
-
-    while (program_launched)
-    {
-        SDL_Event event;
-
-        while (SDL_PollEvent(&event))
-        {
-            switch (event.type)
-            {
-            case SDL_MOUSEBUTTONDOWN:
-                if (event.button.button == SDL_BUTTON_LEFT)
-                {
-                    tryPlayerPos[0] = event.button.x;
-                    tryPlayerPos[1] = event.button.y;
-                    if ((tryPlayerPos[0] >= 315 && tryPlayerPos[0] < 485) && (tryPlayerPos[1] >= 350 && tryPlayerPos[1] < 447))
-                    {
-                        displayMenu(1, window, renderer);
-                        SDL_Delay(300);
-                        program_launched = SDL_FALSE;
-                    }
-                }
-                break;
-
-            case SDL_QUIT:
-                program_launched = SDL_FALSE;
-                DestroyWindowAndRenderer(&window, &renderer, "None");
-                return 0;
-
-            default:
-                break;
-            }
-        }
-    }
-
-    program_launched = SDL_TRUE;
-
-    //------------------------------------------//
-    // 
-    //------------------------------------------// Tour 1
-
-    displayGrid(grid, 0, window, renderer);
+    displayGrid(grid, GRID_SIZE_Y, GRID_SIZE_X, 0, SDL_GetTicks(), 0, window, renderer, TAB_TEXTURE);
     while (program_launched)
     {
         SDL_Event event;
@@ -164,11 +382,11 @@ int main(void)
                 {
                     tryPlayerPos[0] = (event.button.x - SIDE_PADDING) / 50;
                     tryPlayerPos[1] = event.button.y / 50;
-                    if ((tryPlayerPos[0] >= 0 && tryPlayerPos[0] < GRID_SIZE) && (tryPlayerPos[1] >= 0 && tryPlayerPos[1] < GRID_SIZE))
+                    if ((tryPlayerPos[0] >= 0 && tryPlayerPos[0] < GRID_SIZE_X) && (tryPlayerPos[1] >= 0 && tryPlayerPos[1] < GRID_SIZE_Y))
                         program_launched = SDL_FALSE;
                 }
                 break;
-                
+
             case SDL_QUIT:
                 program_launched = SDL_FALSE;
                 DestroyWindowAndRenderer(&window, &renderer, "None");
@@ -181,37 +399,175 @@ int main(void)
     }
     program_launched = SDL_TRUE;
 
-    if (setBomb(grid, tryPlayerPos[0], tryPlayerPos[1]) == 1)
+    if (setBomb(grid, GRID_SIZE_Y, GRID_SIZE_X, BOMB_COUNT, tryPlayerPos[0], tryPlayerPos[1]) == 1)
     {
         printf("Erreur: setBomb echoue");
         return 1;
     }
 
-    if (findSafeCase(grid, tryPlayerPos[0], tryPlayerPos[1]) == 1)
+    if (findSafeCase(grid, GRID_SIZE_Y, GRID_SIZE_X, tryPlayerPos[0], tryPlayerPos[1]) == 1)
     {
-        displayGrid(grid, 1, window, renderer);
+        displayGrid(grid, GRID_SIZE_Y, GRID_SIZE_X, 1, SDL_GetTicks(), 0, window, renderer, TAB_TEXTURE);
         printf("Game Over!");
+        SDL_Delay(3000);
         DestroyWindowAndRenderer(&window, &renderer, "None");
         return 1;
     }
 
-    if (isVictory(grid) == 0)
+    if (isVictory(grid, GRID_SIZE_Y, GRID_SIZE_X) == 0)
     {
         printf("Bravo!");
+        SDL_Delay(3000);
         DestroyWindowAndRenderer(&window, &renderer, "None");
         return 0;
     }
+}
 
-    //------------------------------------------// 
-    // 
-    //------------------------------------------// Boucle tours 1+
+void displayGrid(int** grid, int GRID_SIZE_Y, int GRID_SIZE_X, int loose, int frame, int state, SDL_Window* window, SDL_Renderer* renderer, stTexture* TAB_TEXTURE)
+{
+    int i, j, imgNumber = 0;
 
-    displayGrid(grid, 0, window, renderer);
+    for (i = 0; i < GRID_SIZE_Y; i++) {
+        for (j = 0; j < GRID_SIZE_X; j++) {
+
+            switch (grid[i][j])
+            {
+            case GRID_HIDE_CASE:
+                imgNumber = 14;
+                break;
+
+            case GRID_SHOW_CASE:
+                imgNumber = 25;
+                break;
+
+            case GRID_BOMB_CASE:
+                if (loose == 1)
+                    imgNumber = 1 + state;
+                else
+                    imgNumber = 14;
+                break;
+
+            case GRID_FLAG_BOMB_CASE:
+                if (loose == 1)
+                    imgNumber = 1 + state;
+                else
+                {
+                    if (frame == 0 || frame == 2)
+                        imgNumber = 14;
+                    else if (frame == 1)
+                        imgNumber = 10;
+                    else
+                        imgNumber = 11;
+                }
+                break;
+
+            case GRID_FLAG_HIDE_CASE:
+                if (frame == 0 || frame == 2)
+                    imgNumber = 14;
+                else if (frame == 1)
+                    imgNumber = 10;
+                else
+                    imgNumber = 11;
+                break;
+
+            case GRID_ONE_CASE:
+                imgNumber = 19;
+                break;
+
+            case GRID_TWO_CASE:
+                imgNumber = 30;
+                break;
+
+            case GRID_THREE_CASE:
+                imgNumber = 29;
+                break;
+
+            case GRID_FOUR_CASE:
+                imgNumber = 12;
+                break;
+
+            case GRID_FIVE_CASE:
+                imgNumber = 9;
+                break;
+
+            case GRID_SIX_CASE:
+                imgNumber = 26;
+                break;
+
+            case GRID_SEVEN_CASE:
+                imgNumber = 24;
+                break;
+
+            case GRID_EIGHT_CASE:
+                imgNumber = 7;
+                break;
+
+            default:
+                break;
+            }
+
+            TAB_TEXTURE[imgNumber].rectangle.y = 50 * i;
+            TAB_TEXTURE[imgNumber].rectangle.x = 50 * j + SIDE_PADDING;
+
+            if (SDL_RenderCopy(renderer, TAB_TEXTURE[imgNumber].texture, NULL, &TAB_TEXTURE[imgNumber].rectangle) != 0)
+                DestroyWindowAndRenderer(&window, &renderer, "Impossible d'afficher \"texture\"");
+        }
+    }
+    SDL_RenderPresent(renderer);
+
+    if (loose == 1 && state != 3)
+    {
+        SDL_Delay(200);
+        displayGrid(grid, GRID_SIZE_Y, GRID_SIZE_X, loose, frame, state + 1, window, renderer, TAB_TEXTURE);
+    }
+}
+
+int setBomb(int** grid, int GRID_SIZE_Y, int GRID_SIZE_X, int BOMB_COUNT, int startPosX, int startPosY)
+{
+    srand(time(NULL));
+    const int FREE_CASE_COUNT = (GRID_SIZE_Y) * (GRID_SIZE_X);
+    if (FREE_CASE_COUNT < BOMB_COUNT)
+        return 1;
+    stArray freeIndex = createTab(FREE_CASE_COUNT);
+    int randomPos, i, j = 0;
+
+    for (i = 3; i > 0; i--)
+    {
+        for (j = 3; j > 0; j--)
+        {
+            if (startPosX + i - 2 >= 0 && startPosX + i - 2 < GRID_SIZE_X && startPosY + j - 2 >= 0 && startPosY + j - 2 < GRID_SIZE_Y)
+            {
+                removeAt(&freeIndex, (startPosY + i - 2) * GRID_SIZE_X + startPosX + j - 2);
+            }
+
+        }
+    }
+
+    for (i = 0; i < BOMB_COUNT; i++)
+    {
+        randomPos = rand() % (freeIndex.size - i - 9);
+        grid[freeIndex.point[randomPos] / GRID_SIZE_X][freeIndex.point[randomPos] % GRID_SIZE_X] = GRID_BOMB_CASE;
+        removeAt(&freeIndex, randomPos);
+    }
+
+    free(freeIndex.point);
+    return 0;
+}
+
+int game(int** grid, int GRID_SIZE_Y, int GRID_SIZE_X,int BOMB_COUNT, SDL_Window* window, SDL_Renderer* renderer, stTexture* TAB_TEXTURE)
+{
+    int returnValue = 0;
+    int time = 0;
+    int frame = 0;
+    int flagCount = 0;
+    int tryPlayerPos[2] = { 0 };
+    SDL_bool program_launched = SDL_TRUE;
+
+    displayGrid(grid, GRID_SIZE_Y, GRID_SIZE_X, 0, SDL_GetTicks(), 0, window, renderer, TAB_TEXTURE);
 
     while (program_launched)
     {
         SDL_Event event;
-
         while (SDL_PollEvent(&event))
         {
             switch (event.type)
@@ -221,53 +577,58 @@ int main(void)
                 tryPlayerPos[1] = event.button.y / 50;
                 if (event.button.button == SDL_BUTTON_LEFT)
                 {
-                    if ((tryPlayerPos[0] >= 0 && tryPlayerPos[0] < GRID_SIZE) && (tryPlayerPos[1] >= 0 && tryPlayerPos[1] < GRID_SIZE))
+                    if ((tryPlayerPos[0] >= 0 && tryPlayerPos[0] < GRID_SIZE_X) && (tryPlayerPos[1] >= 0 && tryPlayerPos[1] < GRID_SIZE_Y))
                     {
-                        if (findSafeCase(grid, tryPlayerPos[0], tryPlayerPos[1]) == 1)
+                        if (findSafeCase(grid, GRID_SIZE_Y, GRID_SIZE_X, tryPlayerPos[0], tryPlayerPos[1]) == 1)
                         {
-                            displayGrid(grid, 1, window, renderer);
-                            printf("Game Over!");
-                            SDL_Delay(3000);
-                            DestroyWindowAndRenderer(&window, &renderer, "None");
-                            return 1;
+                            displayGrid(grid, GRID_SIZE_Y, GRID_SIZE_X, 1, SDL_GetTicks(), 0, window, renderer, TAB_TEXTURE);
+                            SDL_Delay(1000);
+                            returnValue = replay(window, renderer, TAB_TEXTURE, 1);
+                            return returnValue;
                         }
 
-                        if (isVictory(grid) == 0)
+                        if (isVictory(grid, GRID_SIZE_Y, GRID_SIZE_X) == 0)
                         {
-                            printf("Bravo!");
-                            SDL_Delay(3000);
-                            DestroyWindowAndRenderer(&window, &renderer, "None");
-                            return 0;
+                            SDL_Delay(1000);
+                            returnValue = replay(window, renderer, TAB_TEXTURE, 0);
+                            return returnValue;
                         }
-                        displayGrid(grid, 0, window, renderer);
+                        displayGrid(grid, GRID_SIZE_Y, GRID_SIZE_X, 0, SDL_GetTicks(), 0, window, renderer, TAB_TEXTURE);
                     }
                 }
                 if (event.button.button == SDL_BUTTON_RIGHT)
                 {
-                    if ((tryPlayerPos[0] >= 0 && tryPlayerPos[0] < GRID_SIZE) && (tryPlayerPos[1] >= 0 && tryPlayerPos[1] < GRID_SIZE))
+                    if ((tryPlayerPos[0] >= 0 && tryPlayerPos[0] < GRID_SIZE_X) && (tryPlayerPos[1] >= 0 && tryPlayerPos[1] < GRID_SIZE_Y))
                     {
                         switch (grid[tryPlayerPos[1]][tryPlayerPos[0]])
                         {
                         case GRID_HIDE_CASE:
                             grid[tryPlayerPos[1]][tryPlayerPos[0]] = GRID_FLAG_HIDE_CASE;
+                            flagCount++;
+                            displayFlagCount(flagCount, BOMB_COUNT, window, renderer, TAB_TEXTURE);
                             break;
 
                         case GRID_BOMB_CASE:
                             grid[tryPlayerPos[1]][tryPlayerPos[0]] = GRID_FLAG_BOMB_CASE;
+                            flagCount++;
+                            displayFlagCount(flagCount, BOMB_COUNT, window, renderer, TAB_TEXTURE);
                             break;
 
                         case GRID_FLAG_HIDE_CASE:
                             grid[tryPlayerPos[1]][tryPlayerPos[0]] = GRID_HIDE_CASE;
+                            flagCount--;
+                            displayFlagCount(flagCount, BOMB_COUNT, window, renderer, TAB_TEXTURE);
                             break;
 
                         case GRID_FLAG_BOMB_CASE:
                             grid[tryPlayerPos[1]][tryPlayerPos[0]] = GRID_BOMB_CASE;
+                            flagCount--;
+                            displayFlagCount(flagCount, BOMB_COUNT, window, renderer, TAB_TEXTURE);
                             break;
 
                         default:
                             break;
                         }
-                        displayGrid(grid, 0, window, renderer);
                     }
                 }
                 break;
@@ -280,9 +641,213 @@ int main(void)
                 break;
             }
         }
+        if (time + 150 <= SDL_GetTicks())
+        {
+            time = SDL_GetTicks();
+            if (frame == 3)
+                frame -= 3;
+            else
+                frame++;
+            displayGrid(grid, GRID_SIZE_Y, GRID_SIZE_X, 0, frame, 0, window, renderer, TAB_TEXTURE);
+        }
     }
-    DestroyWindowAndRenderer(&window, &renderer, "None");
-    return EXIT_SUCCESS;
+    return 1;
+}
+
+void displayFlagCount(int flagCount, int BOMB_COUNT, SDL_Window* window, SDL_Renderer* renderer, stTexture* TAB_TEXTURE)
+{
+    if (flagCount < BOMB_COUNT)
+    {
+        TAB_TEXTURE[33 + ((BOMB_COUNT - flagCount) / 100)].rectangle.x = (WINDOW_SIZE_X)-150;
+        TAB_TEXTURE[33 + ((BOMB_COUNT - flagCount) / 100)].rectangle.y = 50;
+
+        if (SDL_RenderCopy(renderer, TAB_TEXTURE[33 + ((BOMB_COUNT - flagCount) / 100)].texture, NULL, &TAB_TEXTURE[33 + ((BOMB_COUNT - flagCount) / 100)].rectangle) != 0)
+            DestroyWindowAndRenderer(&window, &renderer, "Impossible d'afficher \"texture\"");
+
+        TAB_TEXTURE[33 + (((BOMB_COUNT - flagCount) % 100) / 10)].rectangle.x = (WINDOW_SIZE_X)-100;
+        TAB_TEXTURE[33 + (((BOMB_COUNT - flagCount) % 100) / 10)].rectangle.y = 50;
+
+        if (SDL_RenderCopy(renderer, TAB_TEXTURE[33 + (((BOMB_COUNT - flagCount) % 100) / 10)].texture, NULL, &TAB_TEXTURE[33 + (((BOMB_COUNT - flagCount) % 100) / 10)].rectangle) != 0)
+            DestroyWindowAndRenderer(&window, &renderer, "Impossible d'afficher \"texture\"");
+
+        TAB_TEXTURE[33 + ((BOMB_COUNT - flagCount) % 10)].rectangle.x = (WINDOW_SIZE_X) - 50;
+        TAB_TEXTURE[33 + ((BOMB_COUNT - flagCount) % 10)].rectangle.y = 50;
+
+        if (SDL_RenderCopy(renderer, TAB_TEXTURE[33 + ((BOMB_COUNT - flagCount) % 10)].texture, NULL, &TAB_TEXTURE[33 + ((BOMB_COUNT - flagCount) % 10)].rectangle) != 0)
+            DestroyWindowAndRenderer(&window, &renderer, "Impossible d'afficher \"texture\"");
+    }
+    else
+    {
+        TAB_TEXTURE[43].rectangle.x = (WINDOW_SIZE_X)-150;
+        TAB_TEXTURE[43].rectangle.y = 50;
+
+        if (SDL_RenderCopy(renderer, TAB_TEXTURE[43].texture, NULL, &TAB_TEXTURE[43].rectangle) != 0)
+            DestroyWindowAndRenderer(&window, &renderer, "Impossible d'afficher \"texture\"");
+
+        TAB_TEXTURE[33 - (((BOMB_COUNT - flagCount) % 100) / 10)].rectangle.x = (WINDOW_SIZE_X)-100;
+        TAB_TEXTURE[33 - (((BOMB_COUNT - flagCount) % 100) / 10)].rectangle.y = 50;
+
+        if (SDL_RenderCopy(renderer, TAB_TEXTURE[33 - (((BOMB_COUNT - flagCount) % 100) / 10)].texture, NULL, &TAB_TEXTURE[33 - (((BOMB_COUNT - flagCount) % 100) / 10)].rectangle) != 0)
+            DestroyWindowAndRenderer(&window, &renderer, "Impossible d'afficher \"texture\"");
+
+        TAB_TEXTURE[33 - ((BOMB_COUNT - flagCount) % 10)].rectangle.x = (WINDOW_SIZE_X)-50;
+        TAB_TEXTURE[33 - ((BOMB_COUNT - flagCount) % 10)].rectangle.y = 50;
+
+        if (SDL_RenderCopy(renderer, TAB_TEXTURE[33 - ((BOMB_COUNT - flagCount) % 10)].texture, NULL, &TAB_TEXTURE[33 - ((BOMB_COUNT - flagCount) % 10)].rectangle) != 0)
+            DestroyWindowAndRenderer(&window, &renderer, "Impossible d'afficher \"texture\"");
+    }
+}
+
+int findSafeCase(int** grid, int GRID_SIZE_Y, int GRID_SIZE_X, int posX, int posY)
+{
+    int selfBombArround = bombArround(grid, GRID_SIZE_Y, GRID_SIZE_X, posX, posY);
+    int i = 0;
+    int j = 0;
+
+    if (grid[posY][posX] == GRID_BOMB_CASE || grid[posY][posX] == GRID_FLAG_BOMB_CASE)
+        return 1;
+    if (selfBombArround != 0)
+    {
+        grid[posY][posX] = selfBombArround + GRID_ONE_CASE - 1;
+        return 0;
+    }
+
+    grid[posY][posX] = GRID_SHOW_CASE;
+    for (i = 0; i < 3; i++)
+    {
+        for (j = 0; j < 3; j++)
+        {
+            if (i - 1 != 0 || j - 1 != 0)
+            {
+                if ((posX + i - 1 >= 0 && posX + i - 1 < GRID_SIZE_X && posY + j - 1 >= 0 && posY + j - 1 < GRID_SIZE_Y) && grid[posY + j - 1][posX + i - 1] == GRID_HIDE_CASE)
+                {
+                    findSafeCase(grid, GRID_SIZE_Y, GRID_SIZE_X, posX + i - 1, posY + j - 1);
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+int bombArround(int** grid, int GRID_SIZE_Y, int GRID_SIZE_X, int posX, int posY)
+{
+    int bombCount = 0;
+    int i = 0;
+    int j = 0;
+
+    for (i = 0; i < 3; i++)
+    {
+        for (j = 0; j < 3; j++)
+        {
+            if (i - 1 != 0 || j - 1 != 0)
+            {
+                if ((posX + i - 1 >= 0 && posX + i - 1 < GRID_SIZE_X && posY + j - 1 >= 0 && posY + j - 1 < GRID_SIZE_Y) && (grid[posY + j - 1][posX + i - 1] == GRID_BOMB_CASE || grid[posY + j - 1][posX + i - 1] == GRID_FLAG_BOMB_CASE))
+                {
+                    bombCount++;
+                }
+            }
+        }
+    }
+
+    return bombCount;
+}
+
+int isVictory(int** grid, int GRID_SIZE_Y, int GRID_SIZE_X)
+{
+    int i = 0;
+    int j = 0;
+
+    for (i = 0; i < GRID_SIZE_Y; i++)
+    {
+        for (j = 0; j < GRID_SIZE_X; j++)
+        {
+            if (grid[i][j] == GRID_HIDE_CASE)
+                return 1;
+        }
+    }
+    return 0;
+}
+
+int replay(SDL_Window* window, SDL_Renderer* renderer, stTexture* TAB_TEXTURE, int loose)
+{
+    SDL_bool program_launched = SDL_TRUE;
+    int tryPlayerPos[2] = { 0 };
+    int imgNumber = 0;
+
+    if (loose == 1)
+        imgNumber = 13;
+    else
+        imgNumber = 31;
+
+    TAB_TEXTURE[imgNumber].rectangle.x = (WINDOW_SIZE_X) / 2 - TAB_TEXTURE[imgNumber].rectangle.w / 2;
+    TAB_TEXTURE[imgNumber].rectangle.y = (WINDOW_SIZE_Y)-300 - TAB_TEXTURE[imgNumber].rectangle.h;
+
+    if (SDL_RenderCopy(renderer, TAB_TEXTURE[imgNumber].texture, NULL, &TAB_TEXTURE[imgNumber].rectangle) != 0)
+        DestroyWindowAndRenderer(&window, &renderer, "Impossible d'afficher \"texture\"");
+
+    TAB_TEXTURE[23].rectangle.x = (WINDOW_SIZE_X) / 2 - TAB_TEXTURE[23].rectangle.w - 20;
+    TAB_TEXTURE[23].rectangle.y = (WINDOW_SIZE_Y)-50 - TAB_TEXTURE[23].rectangle.h;
+
+    if (SDL_RenderCopy(renderer, TAB_TEXTURE[23].texture, NULL, &TAB_TEXTURE[23].rectangle) != 0)
+        DestroyWindowAndRenderer(&window, &renderer, "Impossible d'afficher \"texture\"");
+
+    TAB_TEXTURE[8].rectangle.x = (WINDOW_SIZE_X) / 2 + 20;
+    TAB_TEXTURE[8].rectangle.y = (WINDOW_SIZE_Y)-50 - TAB_TEXTURE[8].rectangle.h;
+
+    if (SDL_RenderCopy(renderer, TAB_TEXTURE[8].texture, NULL, &TAB_TEXTURE[8].rectangle) != 0)
+        DestroyWindowAndRenderer(&window, &renderer, "Impossible d'afficher \"texture\"");
+
+    SDL_RenderPresent(renderer);
+
+
+
+    while (program_launched)
+    {
+        SDL_Event event;
+
+        while (SDL_PollEvent(&event))
+        {
+            switch (event.type)
+            {
+            case SDL_MOUSEBUTTONDOWN:
+                if (event.button.button == SDL_BUTTON_LEFT)
+                {
+                    tryPlayerPos[0] = event.button.x;
+                    tryPlayerPos[1] = event.button.y;
+                    if (tryPlayerPos[1] >= (WINDOW_SIZE_Y)-50 - TAB_TEXTURE[23].rectangle.h && tryPlayerPos[1] < (WINDOW_SIZE_Y)-50)
+                    {
+                        if (tryPlayerPos[0] >= (WINDOW_SIZE_X) / 2 - TAB_TEXTURE[23].rectangle.w - 20 && tryPlayerPos[0] < (WINDOW_SIZE_X) / 2 - 20)
+                        {
+                            SDL_Delay(100);
+                            return 0;
+                        }
+                        if (tryPlayerPos[0] >= (WINDOW_SIZE_X) / 2 + 20 && tryPlayerPos[0] < (WINDOW_SIZE_X) / 2 + TAB_TEXTURE[23].rectangle.w + 20)
+                        {
+                            SDL_Delay(100);
+                            return 1;
+                        }
+                    }
+                }
+                break;
+
+            case SDL_QUIT:
+                program_launched = SDL_FALSE;
+                DestroyWindowAndRenderer(&window, &renderer, "None");
+                return 1;
+
+            default:
+                break;
+            }
+        }
+    }
+    return 0;
+}
+
+void timer(time, frameRate, step)
+{
+    if (time <= frameRate * step)
+        SDL_Delay((frameRate * step) - time);
+    return;
 }
 
 void DestroyWindowAndRenderer(SDL_Window* window, SDL_Renderer* renderer, const char* message)
@@ -303,240 +868,4 @@ void ExitWithError(const char* message)
     SDL_Log("ERREUR : %s > %s\n", message, SDL_GetError());
     SDL_Quit();
     exit(EXIT_FAILURE);
-}
-
-void displayMenu(int state, SDL_Window* window, SDL_Renderer* renderer)
-{
-    SDL_Surface* imageCase = NULL;
-    SDL_Texture* texture = NULL;
-    SDL_Rect rectangleTest;
-
-    imageCase = NULL;
-    texture = NULL;
-
-    imageCase = SDL_LoadBMP("src/background.bmp");
-
-    if (imageCase == NULL)
-        DestroyWindowAndRenderer(&window, &renderer, "\"src/background.bmp\" n'a pas pu se charger");
-
-    texture = SDL_CreateTextureFromSurface(renderer, imageCase);
-    SDL_FreeSurface(imageCase);
-
-    if (texture == NULL)
-        DestroyWindowAndRenderer(&window, &renderer, "Impossible de creer \"texture\"");
-
-    if (SDL_QueryTexture(texture, NULL, NULL, &rectangleTest.w, &rectangleTest.h) != 0)
-        DestroyWindowAndRenderer(&window, &renderer, "Impossible d'acceder à \"texture\"");
-
-    rectangleTest.x = 0;
-    rectangleTest.y = 0;
-
-    if (SDL_RenderCopy(renderer, texture, NULL, &rectangleTest) != 0)
-        DestroyWindowAndRenderer(&window, &renderer, "Impossible d'afficher \"texture\"");
-
-
-    imageCase = NULL;
-    texture = NULL;
-    switch (state)
-    {
-    case 0:
-        imageCase = SDL_LoadBMP("src/button.bmp");
-        break;
-
-    case 1:
-        imageCase = SDL_LoadBMP("src/button2.bmp");
-        break;
-
-    default:
-        imageCase = SDL_LoadBMP("src/bomb.bmp");
-        break;
-    }
-
-    if (imageCase == NULL)
-        DestroyWindowAndRenderer(&window, &renderer, "\"src/button.bmp\" n'a pas pu se charger");
-
-    texture = SDL_CreateTextureFromSurface(renderer, imageCase);
-    SDL_FreeSurface(imageCase);
-
-    if (texture == NULL)
-        DestroyWindowAndRenderer(&window, &renderer, "Impossible de creer \"texture\"");
-
-    if (SDL_QueryTexture(texture, NULL, NULL, &rectangleTest.w, &rectangleTest.h) != 0)
-        DestroyWindowAndRenderer(&window, &renderer, "Impossible d'acceder à \"texture\"");
-
-    rectangleTest.x = 400 - rectangleTest.w / 2;
-    rectangleTest.y = 350;
-
-    if (SDL_RenderCopy(renderer, texture, NULL, &rectangleTest) != 0)
-        DestroyWindowAndRenderer(&window, &renderer, "Impossible d'afficher \"texture\"");
-
-    SDL_RenderPresent(renderer);
-    SDL_DestroyTexture(texture);
-
-}
-
-void displayGrid(int grid[GRID_SIZE][GRID_SIZE], int loose, SDL_Window* window, SDL_Renderer* renderer)
-{
-    const char* tab[13];
-    tab[0] = "src/hide.bmp";
-    tab[1] = "src/show.bmp";
-
-    if (loose == 1)
-        tab[2] = "src/bomb.bmp";
-    else
-        tab[2] = "src/hide.bmp";
-
-    if (loose == 1)
-        tab[3] = "src/bomb.bmp";
-    else
-        tab[3] = "src/flag.bmp";
-
-    tab[4] = "src/flag.bmp";
-    tab[5] = "src/one.bmp";
-    tab[6] = "src/two.bmp";
-    tab[7] = "src/three.bmp";
-    tab[8] = "src/four.bmp";
-    tab[9] = "src/five.bmp";
-    tab[10] = "src/six.bmp";
-    tab[11] = "src/seven.bmp";
-    tab[12] = "src/eight.bmp";
-
-    int i, j = 0;
-
-    SDL_Surface* imageCase = NULL;
-    SDL_Texture* texture = NULL;
-    SDL_Rect rectangleTest;
-
-    for (i = 0; i < GRID_SIZE; i++) {
-        rectangleTest.y = 50 * i;
-        for (j = 0; j < GRID_SIZE; j++) {
-            imageCase = NULL;
-            texture = NULL;
-
-            imageCase = SDL_LoadBMP(tab[grid[i][j]]);
-
-            if (imageCase == NULL)
-                DestroyWindowAndRenderer(&window, &renderer, "\"imageCase\" n'a pas pu se charger");
-
-            texture = SDL_CreateTextureFromSurface(renderer, imageCase);
-            SDL_FreeSurface(imageCase);
-
-            if (texture == NULL)
-                DestroyWindowAndRenderer(&window, &renderer, "Impossible de creer \"texture\"");
-
-            if (SDL_QueryTexture(texture, NULL, NULL, &rectangleTest.w, &rectangleTest.h) != 0)
-                DestroyWindowAndRenderer(&window, &renderer, "Impossible d'acceder à \"texture\"");
-
-            rectangleTest.x = 50 * j + SIDE_PADDING;
-
-            if (SDL_RenderCopy(renderer, texture, NULL, &rectangleTest) != 0)
-                DestroyWindowAndRenderer(&window, &renderer, "Impossible d'afficher \"texture\"");
-        }
-    }
-    SDL_RenderPresent(renderer);
-    SDL_DestroyTexture(texture);
-}
-
-int setBomb(int grid[GRID_SIZE][GRID_SIZE], int startPosX, int startPosY)
-{
-    srand(time(NULL));
-    const int FREE_CASE_COUNT = (GRID_SIZE) * (GRID_SIZE);
-    if (FREE_CASE_COUNT < BOMB_COUNT)
-        return 1;
-    stArray freeIndex = createTab(FREE_CASE_COUNT);
-    int randomPos, i, j = 0;
-
-    for (i = 3; i > 0; i--)
-    {
-        for (j = 3; j > 0; j--)
-        {
-            if (startPosX + i - 2 >= 0 && startPosX + i - 2 < GRID_SIZE && startPosY + j - 2 >= 0 && startPosY + j - 2 < GRID_SIZE)
-            {
-                //printf("indice [%d]: %d\n", (startPosY + i - 2) * 10 + startPosX + j - 2, freeIndex.point[(startPosY + i - 2) * 10 + startPosX + j - 2]);
-                removeAt(&freeIndex, (startPosY + i - 2) * 10 + startPosX + j - 2);
-            }
-
-        }
-    }
-
-    for (i = 0; i < BOMB_COUNT; i++)
-    {
-        randomPos = rand() % (freeIndex.size - i - 9);
-        //printf("RandomPos : %d    Coordonnes :%d | %d\n", randomPos ,freeIndex.point[randomPos] / 10, freeIndex.point[randomPos] % 10);
-        grid[freeIndex.point[randomPos] / 10][freeIndex.point[randomPos] % 10] = GRID_BOMB_CASE;
-        removeAt(&freeIndex, randomPos);
-    }
-
-    free(freeIndex.point);
-    return 0;
-}
-
-int bombArround(int grid[GRID_SIZE][GRID_SIZE], int posX, int posY)
-{
-    int bombCount = 0;
-    int i = 0;
-    int j = 0;
-
-    for (i = 0; i < 3; i++)
-    {
-        for (j = 0; j < 3; j++)
-        {
-            if (i - 1 != 0 || j - 1 != 0)
-            {
-                if ((posX + i - 1 >= 0 && posX + i - 1 < GRID_SIZE && posY + j - 1 >= 0 && posY + j - 1 < GRID_SIZE) && (grid[posY + j - 1][posX + i - 1] == GRID_BOMB_CASE || grid[posY + j - 1][posX + i - 1] == GRID_FLAG_BOMB_CASE))
-                {
-                    bombCount++;
-                }
-            }
-        }
-    }
-
-    return bombCount;
-}
-
-int findSafeCase(int grid[GRID_SIZE][GRID_SIZE], int posX, int posY)
-{
-    int selfBombArround = bombArround(grid, posX, posY);
-    int i = 0;
-    int j = 0;
-
-    if (grid[posY][posX] == GRID_BOMB_CASE || grid[posY][posX] == GRID_FLAG_BOMB_CASE)
-        return 1;
-    if (selfBombArround != 0)
-    {
-        grid[posY][posX] = selfBombArround + GRID_ONE_CASE - 1;
-        return 0;
-    }
-
-    grid[posY][posX] = GRID_SHOW_CASE;
-    for (i = 0; i < 3; i++)
-    {
-        for (j = 0; j < 3; j++)
-        {
-            if (i - 1 != 0 || j - 1 != 0)
-            {
-                if ((posX + i - 1 >= 0 && posX + i - 1 < GRID_SIZE && posY + j - 1 >= 0 && posY + j - 1 < GRID_SIZE) && grid[posY + j - 1][posX + i - 1] == GRID_HIDE_CASE)
-                {
-                    findSafeCase(grid, posX + i - 1, posY + j - 1);
-                }
-            }
-        }
-    }
-    return 0;
-}
-
-int isVictory(int grid[GRID_SIZE][GRID_SIZE])
-{
-    int i = 0;
-    int j = 0;
-
-    for (i = 0; i < GRID_SIZE; i++)
-    {
-        for (j = 0; j < GRID_SIZE; j++)
-        {
-            if (grid[i][j] == GRID_HIDE_CASE)
-                return 1;
-        }
-    }
-    return 0;
 }

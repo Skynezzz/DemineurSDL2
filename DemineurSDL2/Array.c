@@ -18,7 +18,7 @@ stArray createTab(int size)
 
 void removeAt(stArray* tab, int indexValue)
 {
-	if (indexValue >= tab->size)
+	if (indexValue >= tab->size || indexValue < 0)
 		return;
 	int* newPoint = (int*)malloc((tab->size - 1) * sizeof(int));
 	int i = 0;
