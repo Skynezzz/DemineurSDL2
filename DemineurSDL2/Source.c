@@ -3,6 +3,7 @@
 #include <time.h>
 #include <SDL.h>
 #include "Array.h"
+#include "DemineurConsole.h"
 
 typedef struct stTexture
 {
@@ -56,6 +57,16 @@ void ExitWithError(const char* message);
 
 int main(void)
 {
+    int modChoice = 0;
+    printf("0: Demineur SDL :)\n1: Demineur console :c\n>");
+    scanf_s("%d", &modChoice);
+    if (modChoice == 1)
+    {
+        demineurConsole();
+        return 0;
+    }
+
+
     int i, j = 0;
     int menuOutput, gameOutput = 0;
     int GRID_SIZE_X = 0;
@@ -368,6 +379,7 @@ void gameSetup(int** grid, int GRID_SIZE_Y, int GRID_SIZE_X, int BOMB_COUNT, SDL
     int tryPlayerPos[2] = { 0 };
     SDL_bool program_launched = SDL_TRUE;
 
+    displayFlagCount(0, BOMB_COUNT, window, renderer, TAB_TEXTURE);
     displayGrid(grid, GRID_SIZE_Y, GRID_SIZE_X, 0, SDL_GetTicks(), 0, window, renderer, TAB_TEXTURE);
     while (program_launched)
     {
@@ -582,14 +594,15 @@ int game(int** grid, int GRID_SIZE_Y, int GRID_SIZE_X,int BOMB_COUNT, SDL_Window
                         if (findSafeCase(grid, GRID_SIZE_Y, GRID_SIZE_X, tryPlayerPos[0], tryPlayerPos[1]) == 1)
                         {
                             displayGrid(grid, GRID_SIZE_Y, GRID_SIZE_X, 1, SDL_GetTicks(), 0, window, renderer, TAB_TEXTURE);
-                            SDL_Delay(1000);
+                            SDL_Delay(500);
                             returnValue = replay(window, renderer, TAB_TEXTURE, 1);
                             return returnValue;
                         }
 
                         if (isVictory(grid, GRID_SIZE_Y, GRID_SIZE_X) == 0)
                         {
-                            SDL_Delay(1000);
+                            displayGrid(grid, GRID_SIZE_Y, GRID_SIZE_X, 0, SDL_GetTicks(), 0, window, renderer, TAB_TEXTURE);
+                            SDL_Delay(500);
                             returnValue = replay(window, renderer, TAB_TEXTURE, 0);
                             return returnValue;
                         }
@@ -656,7 +669,7 @@ int game(int** grid, int GRID_SIZE_Y, int GRID_SIZE_X,int BOMB_COUNT, SDL_Window
 
 void displayFlagCount(int flagCount, int BOMB_COUNT, SDL_Window* window, SDL_Renderer* renderer, stTexture* TAB_TEXTURE)
 {
-    if (flagCount < BOMB_COUNT)
+    if (flagCount <= BOMB_COUNT)
     {
         TAB_TEXTURE[33 + ((BOMB_COUNT - flagCount) / 100)].rectangle.x = (WINDOW_SIZE_X)-150;
         TAB_TEXTURE[33 + ((BOMB_COUNT - flagCount) / 100)].rectangle.y = 50;
@@ -719,7 +732,7 @@ int findSafeCase(int** grid, int GRID_SIZE_Y, int GRID_SIZE_X, int posX, int pos
         {
             if (i - 1 != 0 || j - 1 != 0)
             {
-                if ((posX + i - 1 >= 0 && posX + i - 1 < GRID_SIZE_X && posY + j - 1 >= 0 && posY + j - 1 < GRID_SIZE_Y) && grid[posY + j - 1][posX + i - 1] == GRID_HIDE_CASE)
+                if ((posX + i - 1 >= 0 && posX + i - 1 < GRID_SIZE_X && posY + j - 1 >= 0 && posY + j - 1 < GRID_SIZE_Y) && (grid[posY + j - 1][posX + i - 1] == GRID_HIDE_CASE || grid[posY + j - 1][posX + i - 1] == GRID_FLAG_HIDE_CASE))
                 {
                     findSafeCase(grid, GRID_SIZE_Y, GRID_SIZE_X, posX + i - 1, posY + j - 1);
                 }
